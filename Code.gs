@@ -1,45 +1,36 @@
-/**
- * Serves the HTML for the web app.
- * @param {Object} e The event parameter for a web app doGet request.
- * @return {HtmlOutput} The HTML output to be served.
- */
-function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile('Index.html')
-      .setTitle('Spreadsheet Data Dashboard')
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Dashboard')
+      .setTitle('Dashboard de Logística')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-/**
- * A server-side function to fetch data from the Google Sheet.
- * This function is called by the client-side JavaScript.
- *
- * @return {Object[][]} A 2D array of data from the spreadsheet.
- */
 function getSheetData() {
   try {
-    // --- CONFIGURATION ---
-    // Replace 'YOUR_SPREADSHEET_ID_HERE' with the actual ID of your Google Sheet.
-    // You can find the ID in the URL of your sheet: https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
-    const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
-    
-    // Replace 'Sheet1' with the name of the sheet you want to get data from.
-    const SHEET_NAME = 'Sheet1';
-    // --- END CONFIGURATION ---
-
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
-    
-    if (!sheet) {
-      throw new Error(`Sheet "${SHEET_NAME}" not found. Please check the configuration.`);
-    }
-    
-    // Fetches all data from the sheet.
+    // Força a abertura da planilha pelo ID para garantir o escopo de permissão correto.
+    const ss = SpreadsheetApp.openById(SpreadsheetApp.getActiveSpreadsheet().getId());
+    const sheet = ss.getActiveSheet();
     const data = sheet.getDataRange().getValues();
     
-    // Return the data to the client.
-    return data;
-  } catch (error) {
-    Logger.log(error.message);
-    // Return an error message to be displayed on the dashboard.
-    return [['Error fetching data', error.message]];
+    // Se não houver dados, retorna um array vazio para evitar erros no lado do cliente.
+    if (!data) {
+      return [];
+    }
+    
+    // Converte objetos de data para strings ISO para evitar problemas com JSON.
+    // O Apps Script trata datas/horas da planilha como objetos Date do JavaScript.
+    return data.map(row => 
+      row.map(cell => {
+        if (cell instanceof Date) {
+          // Formata a data para um padrão consistente que o JavaScript no cliente pode usar.
+          return Utilities.formatDate(cell, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss'Z'");
+        }
+        return cell;
+      })
+    );
+  } catch (e) {
+    // Se houver um erro, registre-o para depuração no Apps Script.
+    Logger.log('Erro em getSheetData: ' + e.toString());
+    // Retorna um erro que pode ser tratado no lado do cliente.
+    throw new Error('Falha ao ler os dados da planilha. Verifique as permissões e os logs do script. Erro: ' + e.toString());
   }
 }
