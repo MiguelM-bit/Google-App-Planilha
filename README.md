@@ -33,34 +33,56 @@ You'll need to transfer the code from this repository into your new Apps Script 
     3.  Delete any existing code in the new file.
     4.  Copy the entire content of the `Index.html` file from this repository and paste it into the `Index.html` editor.
 
-### 3. Configure the Script for Your Spreadsheet
+### 3. Set Project Permissions (Important!)
 
-Now, you need to tell the script which spreadsheet to use.
+This step is crucial to fix the permission error. You need to explicitly tell Google that the script needs to access spreadsheets.
+
+*   In the Apps Script editor, click the **Project Settings** icon (a gear ⚙️) on the left-hand side.
+*   Check the box that says **"Show 'appsscript.json' manifest file in editor"**.
+*   Return to the editor view (click the `<>` icon). You will now see a file named `appsscript.json`. Click on it.
+*   Replace the entire content of the `appsscript.json` file with the following code. This adds the necessary permission scope.
+
+    ```json
+    {
+      "timeZone": "America/New_York",
+      "dependencies": {
+      },
+      "exceptionLogging": "STACKDRIVER",
+      "runtimeVersion": "V8",
+      "oauthScopes": [
+        "https://www.googleapis.com/auth/spreadsheets.readonly"
+      ]
+    }
+    ```
+    *Note: You can change the `"timeZone"` to your own if you wish.*
+
+### 4. Configure the Script for Your Spreadsheet
 
 *   Open the `Code.gs` file in the editor.
 *   Locate the `--- CONFIGURATION ---` section at the top of the `getSheetData` function.
 *   **Set the Spreadsheet ID:** Replace `'YOUR_SPREADSHEET_ID_HERE'` with the actual ID of your Google Sheet. You can find the ID in your sheet's URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`.
 *   **Set the Sheet Name:** Replace `'Sheet1'` with the exact name of the sheet (the tab at the bottom) that contains your data.
 
-### 4. Deploy the Web App
+### 5. Deploy the Web App
 
+*   **Important:** If you have an existing deployment, you must create a **New deployment** for the permission changes to take effect. Updating an existing deployment will not work.
 *   At the top-right of the editor, click the **Deploy** button and select **New deployment**.
 *   Click the gear icon (⚙️) next to "Select type" and choose **Web app**.
 *   Fill in the deployment details:
-    *   **Description:** You can add a note here, like "Initial version".
+    *   **Description:** You can add a note here, like "Fixing permissions".
     *   **Execute as:** Select `Me`.
     *   **Who has access:** Choose who can view your dashboard. For a public dashboard, select `Anyone`.
 *   Click **Deploy**.
 
-### 5. Authorize Permissions
+### 6. Authorize Permissions
 
-The first time you deploy, Google needs your permission to run the script.
+The script will ask for permission again with the correct scope.
 
 *   A window will pop up asking for authorization. Click **Authorize access**.
 *   Choose your Google account.
 *   You might see a warning screen saying "Google hasn't verified this app." This is normal for personal scripts. Click **Advanced**, then click **Go to [Your Project Name] (unsafe)**.
-*   Review the permissions the script needs (it will ask to view your spreadsheets) and click **Allow**.
+*   Review the permissions. It should now ask for permission to "See your Google Spreadsheets". Click **Allow**.
 
-### 6. Access Your Dashboard
+### 7. Access Your Dashboard
 
-After a successful deployment, you will be given a **Web app URL**. This is the public link to your new dashboard. You can copy this URL and share it.
+After a successful deployment, you will be given a **new Web app URL**. Use this new URL to access your dashboard. The old URL will not work with the new permissions.
