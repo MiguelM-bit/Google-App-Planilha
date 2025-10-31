@@ -156,3 +156,9 @@ Vamos adicionar um gráfico de pizza que mostra a contagem de entregas por `Orig
 
 1.  **Remova a Chamada da Função:** Em `processData`, delete a linha que chama a função do gráfico (ex: `drawModalityChart(...)`).
 2.  **Remova a Função do Gráfico:** Delete toda a função `drawModalityChart()`.
+3.  **Remova o Contêiner HTML:** Delete a `div` correspondente no `<body>` (ex: `<div class="chart-container" id="modality_chart_div"></div>`).
+
+### 5. Para Saber Mais
+
+Para descobrir todos os tipos de gráficos e opções de customização disponíveis, a documentação oficial do Google Charts é o melhor lugar para começar:
+*   **Galeria de Gráficos do Google:** [https://developers.google.com/chart/interactive/docs/gallery](https://developers.google.com/chart/interactive/docs/gallery)
