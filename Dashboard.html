@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 15px;
+            color: #343a40;
+        }
+        h1 {
+            text-align: center;
+            color: #212529;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .kpi-card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .kpi-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #007bff;
+        }
+        .kpi-card .label {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .chart-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            height: 400px;
+        }
+        .chart-container.full-width {
+            grid-column: 1 / -1;
+        }
+        #error_div {
+            color: #721c24; 
+            padding: 10px; 
+            background-color: #f8d7da; 
+            border: 1px solid #f5c6cb; 
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none; /* Oculto por padrão */
+        }
+    </style>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['corechart', 'geochart', 'bar']});
+        google.charts.setOnLoadCallback(drawDashboard);
+
+        function drawDashboard() {
+            google.script.run.withSuccessHandler(processData).withFailureHandler(showError).getSheetData();
+        }
+
+        function processData(rawData) {
+            if (!rawData || rawData.length < 2) {
+                showError({ message: "Nenhum dado recebido da planilha." });
+                return;
+            }
+
+            const header = rawData.shift().map(h => String(h).trim());
+            const data = rawData;
+
+            // --- Mapeamento de Índices ---
+            const indices = {
+                coleta: header.indexOf('Horário da coleta'),
+                entrega: header.indexOf('Horário da entrega'),
+                ufDestino: header.indexOf('UF'),
+                transportadora: header.indexOf('Coleta 1'),
+                modalidade: header.indexOf('MODALIDADE'),
+                dia: header.indexOf('DIA')
+            };
+
+            if (Object.values(indices).some(i => i === -1)) {
+                showError({ message: "Uma ou mais colunas essenciais não foram encontradas. Verifique os nomes: 'Horário da coleta', 'Horário da entrega', 'UF', 'Coleta 1', 'MODALIDADE', 'DIA'." });
+                return;
+            }
+
+            // --- Cálculos dos KPIs ---
+            let totalTransitDays = 0;
+            let validTransitCount = 0;
+            const transitDaysDistribution = [];
+            const modalityCounts = {};
+
+            data.forEach(row => {
+                const startDate = new Date(row[indices.coleta]);
+                const endDate = new Date(row[indices.entrega]);
+                if (!isNaN(startDate) && !isNaN(endDate) && endDate >= startDate) {
+                    const transitTime = (endDate - startDate) / (1000 * 60 * 60 * 24); // em dias
+                    totalTransitDays += transitTime;
+                    transitDaysDistribution.push(transitTime);
+                    validTransitCount++;
+                }
+                const modality = row[indices.modalidade] || 'N/A';
+                modalityCounts[modality] = (modalityCounts[modality] || 0) + 1;
+            });
+
+            const avgTransitTime = validTransitCount > 0 ? (totalTransitDays / validTransitCount).toFixed(1) : 'N/A';
+            const topModality = Object.keys(modalityCounts).reduce((a, b) => modalityCounts[a] > modalityCounts[b] ? a : b, 'N/A');
+
+            // --- Desenhar Componentes ---
+            drawKpiCards(data.length, avgTransitTime, topModality);
+            drawMapChart(data, indices.ufDestino);
+            drawTransitHistogram(transitDaysDistribution);
+            drawCarrierChart(data, indices.transportadora);
+            drawModalityChart(modalityCounts);
+        }
+
+        function drawKpiCards(totalTrips, avgTransit, topModality) {
+            document.getElementById('kpi-total-trips').innerText = totalTrips;
+            document.getElementById('kpi-avg-transit').innerText = avgTransit;
+            document.getElementById('kpi-top-modality').innerText = topModality;
+        }
+
+        function drawMapChart(data, ufIndex) {
+            const tripsByUf = data.reduce((acc, row) => {
+                const uf = `BR-${row[ufIndex]}`;
+                if (row[ufIndex]) {
+                    acc[uf] = (acc[uf] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            const chartData = new google.visualization.DataTable();
+            chartData.addColumn('string', 'Estado');
+            chartData.addColumn('number', 'Viagens');
+            chartData.addRows(Object.entries(tripsByUf));
+
+            const options = {
+                title: 'Volume de Entregas por Estado',
+                region: 'BR',
+                resolution: 'provinces',
+                colorAxis: {colors: ['#e6f7ff', '#007bff']},
+                backgroundColor: '#ffffff',
+                datalessRegionColor: '#f8f9fa',
+                defaultColor: '#6c757d',
+                legend: {textStyle: {color: '#343a40', fontSize: 12}},
+                titleTextStyle: {color: '#212529', fontSize: 16, bold: false},
+            };
+            const chart = new google.visualization.GeoChart(document.getElementById('map_chart_div'));
+            chart.draw(chartData, options);
+        }
+
+        function drawTransitHistogram(transitDays) {
+            const chartData = new google.visualization.DataTable();
+            chartData.addColumn('string', 'Dias para Entrega');
+            chartData.addColumn('number', 'Nº de Entregas');
+            
+            const bins = { '0-1 Dia': 0, '1-3 Dias': 0, '3-7 Dias': 0, '7+ Dias': 0 };
+            transitDays.forEach(days => {
+                if (days <= 1) bins['0-1 Dia']++;
+                else if (days <= 3) bins['1-3 Dias']++;
+                else if (days <= 7) bins['3-7 Dias']++;
+                else bins['7+ Dias']++;
+            });
+            chartData.addRows(Object.entries(bins));
+
+            const options = {
+                title: 'Distribuição do Tempo de Trânsito',
+                legend: { position: 'none' },
+                colors: ['#28a745'],
+                hAxis: { title: 'Faixa de Dias' },
+                vAxis: { title: 'Nº de Entregas', minValue: 0 },
+                titleTextStyle: {color: '#212529', fontSize: 16, bold: false},
+            };
+            const chart = new google.visualization.ColumnChart(document.getElementById('transit_histogram_div'));
+            chart.draw(chartData, options);
+        }
+        
+        function drawCarrierChart(data, carrierIndex) {
+            const carrierCounts = data.reduce((acc, row) => {
+                const carrier = row[carrierIndex] || 'N/A';
+                acc[carrier] = (acc[carrier] || 0) + 1;
+                return acc;
+            }, {});
+
+            const chartData = new google.visualization.DataTable();
+            chartData.addColumn('string', 'Transportadora');
+            chartData.addColumn('number', 'Viagens');
+            chartData.addRows(Object.entries(carrierCounts).sort((a,b) => b[1] - a[1]));
+
+            const options = {
+                title: 'Performance por Transportadora (Coleta)',
+                chartArea: {width: '60%'},
+                legend: { position: 'none' },
+                colors: ['#17a2b8'],
+                hAxis: { title: 'Nº de Viagens', minValue: 0 },
+                vAxis: { textStyle: { fontSize: 12 } },
+                titleTextStyle: {color: '#212529', fontSize: 16, bold: false},
+            };
+            const chart = new google.visualization.BarChart(document.getElementById('carrier_chart_div'));
+            chart.draw(chartData, options);
+        }
+
+        function drawModalityChart(modalityCounts) {
+            const chartData = new google.visualization.DataTable();
+            chartData.addColumn('string', 'Modalidade');
+            chartData.addColumn('number', 'Quantidade');
+            chartData.addRows(Object.entries(modalityCounts));
+
+            const options = {
+                title: 'Distribuição por Modalidade',
+                pieHole: 0.4,
+                colors: ['#ffc107', '#dc3545', '#6c757d'],
+                titleTextStyle: {color: '#212529', fontSize: 16, bold: false},
+                legend: { position: 'bottom' }
+            };
+            const chart = new google.visualization.PieChart(document.getElementById('modality_chart_div'));
+            chart.draw(chartData, options);
+        }
+
+        function showError(error) {
+            const errorDiv = document.getElementById('error_div');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = '<strong>Erro:</strong> ' + error.message;
+        }
+    </script>
+</head>
+<body>
+    <h1>Dashboard de Gestão Logística</h1>
+    
+    <div id="error_div"></div>
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <div id="kpi-total-trips" class="value">...</div>
+            <div class="label">Total de Viagens</div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpi-avg-transit" class="value">...</div>
+            <div class="label">Tempo Médio de Trânsito (Dias)</div>
+        </div>
+        <div class="kpi-card">
+            <div id="kpi-top-modality" class="value">...</div>
+            <div class="label">Principal Modalidade</div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="chart-container full-width" id="map_chart_div"></div>
+        <div class="chart-container" id="transit_histogram_div"></div>
+        <div class="chart-container" id="carrier_chart_div"></div>
+        <div class="chart-container" id="modality_chart_div"></div>
+    </div>
+</body>
+</html>
