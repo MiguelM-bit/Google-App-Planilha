@@ -1,11 +1,4 @@
 /**
- * @OnlyCurrentDoc
- *
- * The above comment directs Apps Script to limit the scope of authorization
- * to only the current document.
- */
-
-/**
  * Serves the HTML for the web app.
  * @param {Object} e The event parameter for a web app doGet request.
  * @return {HtmlOutput} The HTML output to be served.
