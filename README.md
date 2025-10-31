@@ -1,88 +1,158 @@
-# Google Sheets Dashboard - Apps Script
+# Instruções para Configuração do Dashboard de Logística no Google Sheets
 
-This repository contains the code for a simple web app built with Google Apps Script. The script creates a dashboard to display data from a specified Google Sheet.
+Siga estas instruções para configurar e utilizar o dashboard de logística com o Google Apps Script.
 
-## Files
+## Passo 1: Prepare sua Planilha Google
 
-*   `Code.gs`: This is the server-side Apps Script code. It handles serving the web app and fetching the data from your Google Sheet.
-*   `Index.html`: This file contains all the client-side code, including the HTML structure, CSS for styling, and JavaScript to request data from the server and build the dashboard table.
+1.  **Crie ou Abra uma Planilha Google:** Faça login na sua conta Google e crie uma nova planilha ou abra uma existente.
+2.  **Importe os Dados:** Copie e cole os dados da sua planilha de logística para a primeira aba da sua Planilha Google. A primeira linha deve conter os cabeçalhos das colunas (SHIPMENT, NUMERO DA SM, DIA, etc.).
+3.  **Verifique os Cabeçalhos:** Certifique-se de que os nomes das colunas usadas pelo dashboard (`Horário da coleta`, `Horário da entrega`, `UF`, `Coleta 1`, `MODALIDADE`, `DIA`) existem e estão escritos corretamente.
+
+## Passo 2: Abra o Editor do Google Apps Script
+
+1.  Com a sua planilha aberta, vá em `Extensões` > `Apps Script`.
+2.  Isso abrirá o editor de scripts em uma nova aba do seu navegador.
+
+## Passo 3: Crie os Arquivos do Script
+
+Você precisará de dois arquivos no seu projeto do Apps Script: `Code.gs` e `Dashboard.html`.
+
+### Arquivo 1: `Code.gs` (Arquivo de Script)
+
+1.  Por padrão, um arquivo chamado `Code.gs` já deve existir. Se não, crie um novo arquivo de script (`+` > `Script`) e renomeie-o para `Code.gs`.
+2.  Apague todo o conteúdo existente e cole o código `Code.gs` fornecido.
+
+### Arquivo 2: `Dashboard.html` (Arquivo HTML)
+
+1.  No editor do Apps Script, clique em `+` (Adicionar um arquivo) e selecione `HTML`.
+2.  Dê ao arquivo o nome de `Dashboard` e clique em "OK".
+3.  Apague todo o conteúdo padrão e cole o código `Dashboard.html` fornecido.
+
+## Passo 4: Salve e Execute o Projeto
+
+1.  **Salve o Projeto:** Clique no ícone de disquete (Salvar projeto).
+2.  **Execute uma Função para Autorizar:**
+    *   Na barra de ferramentas, selecione a função `getSheetData` no menu suspenso.
+    *   Clique em `Executar`.
+3.  **Autorização:**
+    *   Na primeira vez, o Google solicitará sua autorização. Clique em `Revisar permissões`.
+    *   Escolha sua conta do Google.
+    *   Pode aparecer um aviso de "Aplicativo não verificado". Clique em `Avançado` e depois em `Acessar <Nome do seu projeto> (não seguro)`.
+    *   Clique em `Permitir`.
+
+## Passo 5: Implante o Script como um Aplicativo Web
+
+1.  Clique em `Implantar` no canto superior direito e selecione `Nova implantação`.
+2.  Clique no ícone de engrenagem (`Selecionar tipo`) e escolha `App da Web`.
+3.  Nas configurações de implantação:
+    *   **Descrição:** Adicione uma descrição (ex: "Dashboard de Logística v2").
+    *   **Executar como:** Deixe como `Eu (seu.email@gmail.com)`.
+    *   **Quem pode acessar:** Selecione `Qualquer pessoa com uma conta do Google` ou `Qualquer pessoa`.
+4.  Clique em `Implantar`.
+5.  Copie a URL do aplicativo da web fornecida.
+
+## Passo 6: Acesse seu Dashboard
+
+1.  Cole a URL copiada em uma nova aba do seu navegador.
+2.  O dashboard será carregado. Sempre que os dados na planilha forem atualizados, basta recarregar a página do dashboard.
+3.  **Importante:** Se você fizer alterações no código (`.gs` ou `.html`), você precisa fazer uma **nova implantação** para que as mudanças apareçam online. Vá em `Implantar` > `Gerenciar implantações`, selecione sua implantação, clique em `Editar` (lápis) e escolha `Nova versão` no menu `Versão`.
 
 ---
 
-## Setup and Deployment Guide
+## Passo 7: Manutenção e Customização do Dashboard
 
-Follow these steps to get your dashboard up and running.
+Toda a lógica visual e de processamento de dados do dashboard está no arquivo `Dashboard.html`.
 
-### 1. Create a Google Apps Script Project
+### 1. Alterar Títulos e Textos
 
-*   Navigate to [script.google.com](https://script.google.com/home/my).
-*   Click on **New project** to open the Apps Script editor.
+*   **Título Principal:** Encontre a tag `<h1>` no `<body>` e edite o texto.
+    ```html
+    <h1>Dashboard de Gestão Logística</h1>
+    ```
+*   **Rótulos dos KPIs:** Encontre a seção `kpi-container` e edite os textos dentro das divs com a classe `label`.
+    ```html
+    <div class="label">Total de Viagens</div>
+    ```
 
-### 2. Copy the Code from this Repository
+### 2. Editar um Gráfico Existente
 
-You'll need to transfer the code from this repository into your new Apps Script project.
+Cada gráfico tem sua própria função `draw...Chart()`, por exemplo, `drawMapChart()`.
 
-*   **Add `Code.gs` content:**
-    1.  Open the `Code.gs` file in your Apps Script project.
-    2.  Delete any existing code in that file.
-    3.  Copy the entire content of the `Code.gs` file from this repository and paste it into the editor.
+1.  **Localize a Função:** Encontre a função do gráfico que deseja alterar (ex: `drawModalityChart`).
+2.  **Altere as Opções:** Dentro da função, há um objeto `options`. Você pode alterar o `title`, `colors`, `pieHole`, etc.
 
-*   **Add `Index.html` content:**
-    1.  In the Apps Script editor, click the **+** icon next to "Files" and select **HTML**.
-    2.  Name the new file `Index.html` and press Enter.
-    3.  Delete any existing code in the new file.
-    4.  Copy the entire content of the `Index.html` file from this repository and paste it into the `Index.html` editor.
+    ```javascript
+    // Exemplo: Editando o gráfico de Modalidade
+    function drawModalityChart(modalityCounts) {
+        // ... código de preparação dos dados ...
 
-### 3. Set Project Permissions (Important!)
-
-This step is crucial to fix the permission error. You need to explicitly tell Google that the script needs to access spreadsheets.
-
-*   In the Apps Script editor, click the **Project Settings** icon (a gear ⚙️) on the left-hand side.
-*   Check the box that says **"Show 'appsscript.json' manifest file in editor"**.
-*   Return to the editor view (click the `<>` icon). You will now see a file named `appsscript.json`. Click on it.
-*   Replace the entire content of the `appsscript.json` file with the following code. This adds the necessary permission scope.
-
-    ```json
-    {
-      "timeZone": "America/New_York",
-      "dependencies": {
-      },
-      "exceptionLogging": "STACKDRIVER",
-      "runtimeVersion": "V8",
-      "oauthScopes": [
-        "https://www.googleapis.com/auth/spreadsheets.readonly"
-      ]
+        const options = {
+            title: 'Modalidades de Transporte Utilizadas', // Título alterado
+            pieHole: 0.5, // Aumenta o buraco no meio
+            colors: ['#ffc107', '#dc3545', '#007bff', '#28a745'], // Novas cores
+            // ... outras opções ...
+        };
+        const chart = new google.visualization.PieChart(document.getElementById('modality_chart_div'));
+        chart.draw(chartData, options);
     }
     ```
-    *Note: You can change the `"timeZone"` to your own if you wish.*
 
-### 4. Configure the Script for Your Spreadsheet
+### 3. Adicionar um Novo Gráfico
 
-*   Open the `Code.gs` file in the editor.
-*   Locate the `--- CONFIGURATION ---` section at the top of the `getSheetData` function.
-*   **Set the Spreadsheet ID:** Replace `'YOUR_SPREADSHEET_ID_HERE'` with the actual ID of your Google Sheet. You can find the ID in your sheet's URL: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`.
-*   **Set the Sheet Name:** Replace `'Sheet1'` with the exact name of the sheet (the tab at the bottom) that contains your data.
+Vamos adicionar um gráfico de pizza que mostra a contagem de entregas por `Origem 1`.
 
-### 5. Deploy the Web App
+1.  **Adicione o Contêiner no HTML:** No `<body>`, dentro de `dashboard-container`, adicione uma nova `div` com um `id` único.
+    ```html
+    <div class="dashboard-container">
+        <!-- ... outros gráficos ... -->
+        <div class="chart-container" id="origin_chart_div"></div>
+    </div>
+    ```
 
-*   **Important:** If you have an existing deployment, you must create a **New deployment** for the permission changes to take effect. Updating an existing deployment will not work.
-*   At the top-right of the editor, click the **Deploy** button and select **New deployment**.
-*   Click the gear icon (⚙️) next to "Select type" and choose **Web app**.
-*   Fill in the deployment details:
-    *   **Description:** You can add a note here, like "Fixing permissions".
-    *   **Execute as:** Select `Me`.
-    *   **Who has access:** Choose who can view your dashboard. For a public dashboard, select `Anyone`.
-*   Click **Deploy**.
+2.  **Crie a Função JavaScript:** Adicione uma nova função `drawOriginChart` no `<script>`.
+    ```javascript
+    function drawOriginChart(data, originIndex) {
+        const originCounts = data.reduce((acc, row) => {
+            const origin = row[originIndex] || 'N/A';
+            acc[origin] = (acc[origin] || 0) + 1;
+            return acc;
+        }, {});
 
-### 6. Authorize Permissions
+        const chartData = new google.visualization.DataTable();
+        chartData.addColumn('string', 'Origem');
+        chartData.addColumn('number', 'Viagens');
+        chartData.addRows(Object.entries(originCounts));
 
-The script will ask for permission again with the correct scope.
+        const options = {
+            title: 'Viagens por Origem',
+            is3D: true, // Um toque diferente
+        };
 
-*   A window will pop up asking for authorization. Click **Authorize access**.
-*   Choose your Google account.
-*   You might see a warning screen saying "Google hasn't verified this app." This is normal for personal scripts. Click **Advanced**, then click **Go to [Your Project Name] (unsafe)**.
-*   Review the permissions. It should now ask for permission to "See your Google Spreadsheets". Click **Allow**.
+        const chart = new google.visualization.PieChart(document.getElementById('origin_chart_div'));
+        chart.draw(chartData, options);
+    }
+    ```
 
-### 7. Access Your Dashboard
+3.  **Chame a Nova Função:** Dentro da função `processData`, adicione o índice da nova coluna e chame sua nova função.
+    ```javascript
+    function processData(rawData) {
+        // ...
+        const header = rawData.shift().map(h => String(h).trim());
+        
+        const indices = {
+            // ... outros índices ...
+            origem: header.indexOf('Origem 1') // Novo índice
+        };
 
-After a successful deployment, you will be given a **new Web app URL**. Use this new URL to access your dashboard. The old URL will not work with the new permissions.
+        // ...
+        
+        // --- Desenhar Componentes ---
+        // ... chamadas de outros gráficos ...
+        drawOriginChart(data, indices.origem); // Chame a nova função
+    }
+    ```
+
+### 4. Remover um Gráfico
+
+1.  **Remova a Chamada da Função:** Em `processData`, delete a linha que chama a função do gráfico (ex: `drawModalityChart(...)`).
+2.  **Remova a Função do Gráfico:** Delete toda a função `drawModalityChart()`.
