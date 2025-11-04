@@ -1,4 +1,108 @@
-# Instruções para Configuração do Dashboard de Logística no Google Sheets
+# 📊 Dashboard de Logística para Google Sheets
+
+Dashboard interativo e configurável para análise de dados logísticos, com geração automática de gráficos e KPIs.
+
+[![Versão](https://img.shields.io/badge/versão-2.0-blue.svg)](https://github.com)
+[![Status](https://img.shields.io/badge/status-ativo-success.svg)](https://github.com)
+[![Licença](https://img.shields.io/badge/licença-open--source-green.svg)](https://github.com)
+
+---
+
+## 🚀 Início Rápido
+
+**Novo usuário?** Comece aqui em 3 passos:
+
+1. **[⚡ Instalação Rápida](INSTALACAO_RAPIDA.md)** - Configure em 10 minutos
+2. **[✅ Checklist de Implementação](CHECKLIST_IMPLEMENTACAO.md)** - Passo a passo detalhado
+3. **[🎨 Guia do Configurador](GUIA_CONFIGURADOR.md)** - Personalize visualmente
+
+**Já tem instalado?** 
+- 📊 [Como usar o Configurador](GUIA_CONFIGURADOR.md#como-usar-o-configurador)
+- 🔗 [Links e Referências](LINKS_REFERENCIAS.md)
+
+---
+
+## ✨ Novidades da Versão 2.0
+
+### 🎨 Configurador Visual (NOVO!)
+
+Personalize seu dashboard **sem escrever uma linha de código**:
+- ✅ Escolher quais gráficos exibir (6 tipos disponíveis)
+- ✅ Selecionar KPIs relevantes (5 indicadores)
+- ✅ Mudar tema de cores (5 opções profissionais)
+- ✅ Salvar múltiplas configurações
+- ✅ Exportar/importar configurações em JSON
+
+**Acesse:** `sua-url-do-dashboard?page=config`
+
+### 📈 Novos Recursos
+
+- 🆕 **2 Gráficos Adicionais:** Timeline e Origem
+- 🆕 **2 KPIs Novos:** Transportadora e Estado Top
+- � **5 Temas de Cores:** Azul, Verde, Roxo, Laranja, Vermelho
+- 🆕 **Documentação Completa:** 8 guias detalhados
+
+---
+
+## 📚 Documentação Completa
+
+### 🎯 Por Onde Começar
+
+| Documento | Descrição | Tempo | Nível |
+|-----------|-----------|-------|-------|
+| [⚡ Instalação Rápida](INSTALACAO_RAPIDA.md) | Setup em 5 minutos | 10 min | Iniciante |
+| [✅ Checklist](CHECKLIST_IMPLEMENTACAO.md) | Passo a passo completo | 30 min | Iniciante |
+| [📋 README](README.md) | Este arquivo - visão geral | 5 min | Todos |
+
+### 📖 Guias de Uso
+
+| Documento | Descrição | Para Quem |
+|-----------|-----------|-----------|
+| [🎨 Guia do Configurador](GUIA_CONFIGURADOR.md) | Manual completo do configurador | Usuários |
+| [🎯 Visual da Interface](VISUAL_INTERFACE.md) | Wireframes e layouts | Designers |
+| [🔗 Links e Referências](LINKS_REFERENCIAS.md) | URLs e recursos úteis | Todos |
+
+### 📊 Documentação Executiva
+
+| Documento | Descrição | Para Quem |
+|-----------|-----------|-----------|
+| [� Resumo Executivo](RESUMO_EXECUTIVO.md) | Visão geral do projeto | Gestores |
+| [📑 Índice Completo](INDICE.md) | Navegação da documentação | Todos |
+
+---
+
+## 🎯 Recursos Principais
+
+### 📊 Gráficos Disponíveis (6)
+
+| Gráfico | Descrição | Tipo |
+|---------|-----------|------|
+| 🗺️ Mapa de Estados | Visualização geográfica do Brasil | GeoChart |
+| 📊 Tempo de Trânsito | Histograma de dias de entrega | Column |
+| � Transportadoras | Ranking por volume | Bar |
+| 🥧 Modalidades | Distribuição por tipo | Pie |
+| 📈 Timeline | Evolução temporal | Line |
+| 🎯 Origens | Distribuição por partida | Pie 3D |
+
+### 📈 KPIs Disponíveis (5)
+
+- ✅ Total de Viagens
+- ✅ Tempo Médio de Trânsito
+- ✅ Principal Modalidade
+- ✅ Transportadora Mais Usada (NOVO)
+- ✅ Estado com Mais Entregas (NOVO)
+
+### 🎨 Temas de Cores (5)
+
+- 🔵 Azul (Padrão) - Profissional
+- 🟢 Verde - Sustentabilidade
+- 🟣 Roxo - Moderno
+- 🟠 Laranja - Dinâmico
+- 🔴 Vermelho - Urgência
+
+---
+
+## 📋 Instruções Completas de Configuração
 
 Siga estas instruções para configurar e utilizar o dashboard de logística com o Google Apps Script.
 
@@ -15,7 +119,7 @@ Siga estas instruções para configurar e utilizar o dashboard de logística com
 
 ## Passo 3: Crie os Arquivos do Script
 
-Você precisará de dois arquivos no seu projeto do Apps Script: `Code.gs` e `Dashboard.html`.
+Você precisará de três arquivos no seu projeto do Apps Script:
 
 ### Arquivo 1: `Code.gs` (Arquivo de Script)
 
@@ -27,6 +131,14 @@ Você precisará de dois arquivos no seu projeto do Apps Script: `Code.gs` e `Da
 1.  No editor do Apps Script, clique em `+` (Adicionar um arquivo) e selecione `HTML`.
 2.  Dê ao arquivo o nome de `Dashboard` e clique em "OK".
 3.  Apague todo o conteúdo padrão e cole o código `Dashboard.html` fornecido.
+
+### Arquivo 3: `Configurator.html` (Arquivo HTML - NOVO!)
+
+1.  No editor do Apps Script, clique em `+` (Adicionar um arquivo) e selecione `HTML`.
+2.  Dê ao arquivo o nome de `Configurator` e clique em "OK".
+3.  Cole o código do arquivo `Configurator.html` fornecido.
+
+> 💡 **Dica**: O Configurator permite personalizar o dashboard visualmente sem editar código!
 
 ## Passo 4: Salve e Execute o Projeto
 
@@ -56,6 +168,22 @@ Você precisará de dois arquivos no seu projeto do Apps Script: `Code.gs` e `Da
 1.  Cole a URL copiada em uma nova aba do seu navegador.
 2.  O dashboard será carregado. Sempre que os dados na planilha forem atualizados, basta recarregar a página do dashboard.
 3.  **Importante:** Se você fizer alterações no código (`.gs` ou `.html`), você precisa fazer uma **nova implantação** para que as mudanças apareçam online. Vá em `Implantar` > `Gerenciar implantações`, selecione sua implantação, clique em `Editar` (lápis) e escolha `Nova versão` no menu `Versão`.
+
+### 🎨 Acessar o Configurador
+
+Para personalizar seu dashboard visualmente, adicione `?page=config` à URL:
+
+```
+https://script.google.com/macros/s/SEU_ID_AQUI/exec?page=config
+```
+
+Isso abrirá o **Configurador Visual** onde você pode:
+- Escolher quais gráficos exibir
+- Selecionar KPIs relevantes
+- Mudar o tema de cores
+- Salvar configurações personalizadas
+
+**[📖 Veja o Guia Completo do Configurador](GUIA_CONFIGURADOR.md)**
 
 ---
 
