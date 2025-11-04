@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 15px;
+            color: #343a40;
+        }
+        h1 {
+            text-align: center;
+            color: #212529;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .config-info {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .config-info strong {
+            color: #0056b3;
+        }
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .kpi-card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .kpi-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color, #007bff);
+        }
+        .kpi-card .label {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .chart-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            height: 400px;
+        }
+        .chart-container.full-width {
+            grid-column: 1 / -1;
+        }
+        #error_div {
+            color: #721c24; 
+            padding: 10px; 
+            background-color: #f8d7da; 
+            border: 1px solid #f5c6cb; 
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        /* Temas de cores */
+        body.theme-blue { --primary-color: #007bff; --secondary-color: #17a2b8; }
+        body.theme-green { --primary-color: #28a745; --secondary-color: #20c997; }
+        body.theme-purple { --primary-color: #6f42c1; --secondary-color: #e83e8c; }
+        body.theme-orange { --primary-color: #fd7e14; --secondary-color: #ffc107; }
+        body.theme-red { --primary-color: #dc3545; --secondary-color: #e83e8c; }
+    </style>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        // Configuração carregada do servidor
+        let DASHBOARD_CONFIG = null;
+        
+        google.charts.load('current', {'packages':['corechart', 'geochart', 'bar']});
+        google.charts.setOnLoadCallback(loadConfigAndDraw);
+
+        function loadConfigAndDraw() {
+            // Carrega a configuração salva
+            google.script.run
+                .withSuccessHandler(function(configJson) {
+                    if (configJson) {
+                        DASHBOARD_CONFIG = JSON.parse(configJson);
+                        applyTheme();
+                        showConfigInfo();
+                    }
+                    drawDashboard();
+                })
+                .withFailureHandler(function(error) {
+                    console.log('Usando configuração padrão');
+                    drawDashboard();
+                })
+                .loadConfiguration();
+        }
+
+        function applyTheme() {
+            if (DASHBOARD_CONFIG && DASHBOARD_CONFIG.theme) {
+                document.body.className = 'theme-' + DASHBOARD_CONFIG.theme;
+            }
+        }
+
+        function showConfigInfo() {
+            if (DASHBOARD_CONFIG && DASHBOARD_CONFIG.name) {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'config-info';
+                infoDiv.innerHTML = '<strong>📋 Configuração Ativa:</strong> ' + DASHBOARD_CONFIG.name;
+                document.body.insertBefore(infoDiv, document.querySelector('h1').nextSibling);
+            }
+        }
+
+        function isChartEnabled(chartName) {
+            if (!DASHBOARD_CONFIG || !DASHBOARD_CONFIG.charts) return true;
+            return DASHBOARD_CONFIG.charts[chartName] !== false;
+        }
+
+        function isKpiEnabled(kpiName) {
+            if (!DASHBOARD_CONFIG || !DASHBOARD_CONFIG.kpis) return true;
+            return DASHBOARD_CONFIG.kpis[kpiName] !== false;
+        }
+
+        function drawDashboard() {
+            google.script.run.withSuccessHandler(processData).withFailureHandler(showError).getSheetData();
+        }
+
+        function processData(rawData) {
+            if (!rawData || rawData.length < 2) {
+                showError({ message: "Nenhum dado recebido da planilha." });
+                return;
+            }
+
+            const header = rawData.shift().map(h => String(h).trim());
+            const data = rawData;
+
+            const indices = {
+                horarioColeta: header.indexOf('Horário da coleta'),
+                diaEntrega: header.indexOf('DIA ENTREGA'),
+                horaEntrega: header.indexOf('HORA ENTREGA'),
+                ufDestino: header.indexOf('UF'),
+                transportadora: header.indexOf('Coleta 1'),
+                modalidade: header.indexOf('MODALIDADE'),
+                dia: header.indexOf('DIA'),
+                horarioInclusao: header.indexOf('HORARIO DE INCLUSÃO'),
+                origem: header.indexOf('Origem 1')
+            };
+
+            // Diagnóstico: mostra quais colunas NÃO foram encontradas
+            const missingColumns = [];
+            if (indices.horarioColeta === -1) missingColumns.push('Horário da coleta');
+            if (indices.diaEntrega === -1) missingColumns.push('DIA ENTREGA');
+            if (indices.horaEntrega === -1) missingColumns.push('HORA ENTREGA');
+            if (indices.ufDestino === -1) missingColumns.push('UF');
+            if (indices.transportadora === -1) missingColumns.push('Coleta 1');
+            if (indices.modalidade === -1) missingColumns.push('MODALIDADE');
+            if (indices.dia === -1) missingColumns.push('DIA');
+            if (indices.horarioInclusao === -1) missingColumns.push('HORARIO DE INCLUSÃO');
+            if (indices.origem === -1) missingColumns.push('Origem 1');
+
+            if (missingColumns.length > 0) {
+                showError({ 
+                    message: "Uma ou mais colunas essenciais não foram encontradas. Verifique os nomes: '" + 
+                    missingColumns.join("', '") + "'.<br><br>" +
+                    "<strong>Colunas disponíveis na planilha:</strong><br>" + 
+                    header.join(', ')
+                });
+                return;
+            }
+
+            // Cálculos dos KPIs
+            let totalTransitDays = 0;
+            let validTransitCount = 0;
+            const transitDaysDistribution = [];
+            const modalityCounts = {};
+            const carrierCounts = {};
+            const stateCounts = {};
+            const timelineData = {};
+            let inclusoesAntecipadas = 0;
+            let inclusoesAtrasadas = 0;
+
+            data.forEach(row => {
+                // Cálculo de tempo de trânsito usando Horário da coleta e DIA ENTREGA + HORA ENTREGA
+                const startDate = new Date(row[indices.horarioColeta]);
+                const diaEntregaStr = row[indices.diaEntrega];
+                const horaEntregaStr = row[indices.horaEntrega];
+                
+                // Combinar DIA ENTREGA + HORA ENTREGA para criar data completa
+                let endDate = null;
+                if (diaEntregaStr && horaEntregaStr) {
+                    const diaEntregaParts = String(diaEntregaStr).split('/');
+                    if (diaEntregaParts.length === 3) {
+                        const dia = diaEntregaParts[0].padStart(2, '0');
+                        const mes = diaEntregaParts[1].padStart(2, '0');
+                        const ano = diaEntregaParts[2];
+                        endDate = new Date(`${ano}-${mes}-${dia}T${horaEntregaStr}`);
+                    }
+                }
+                
+                if (!isNaN(startDate) && endDate && !isNaN(endDate) && endDate >= startDate) {
+                    const transitTime = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                    totalTransitDays += transitTime;
+                    transitDaysDistribution.push(transitTime);
+                    validTransitCount++;
+                }
+                
+                const modality = row[indices.modalidade] || 'N/A';
+                modalityCounts[modality] = (modalityCounts[modality] || 0) + 1;
+                
+                const carrier = row[indices.transportadora] || 'N/A';
+                carrierCounts[carrier] = (carrierCounts[carrier] || 0) + 1;
+                
+                const state = row[indices.ufDestino] || 'N/A';
+                stateCounts[state] = (stateCounts[state] || 0) + 1;
+                
+                // Timeline data
+                if (row[indices.dia]) {
+                    const day = String(row[indices.dia]).trim();
+                    timelineData[day] = (timelineData[day] || 0) + 1;
+                }
+                
+                // Análise de timing de inclusão (DIA vs DIA ENTREGA)
+                if (indices.dia !== -1 && indices.diaEntrega !== -1) {
+                    const diaInclusao = row[indices.dia];
+                    const diaEntrega = row[indices.diaEntrega];
+                    
+                    if (diaInclusao && diaEntrega) {
+                        // Função para converter DD/MM/YYYY para objeto Date
+                        function parseDataBR(dataStr) {
+                            const str = String(dataStr).trim();
+                            if (str.includes('/')) {
+                                const partes = str.split('/');
+                                if (partes.length === 3) {
+                                    // DD/MM/YYYY -> YYYY-MM-DD
+                                    const dia = partes[0].padStart(2, '0');
+                                    const mes = partes[1].padStart(2, '0');
+                                    const ano = partes[2];
+                                    return new Date(`${ano}-${mes}-${dia}`);
+                                }
+                            }
+                            // Se não tiver /, tentar como Date direto
+                            return new Date(str);
+                        }
+                        
+                        const dataInclusao = parseDataBR(diaInclusao);
+                        const dataEntregaFinal = parseDataBR(diaEntrega);
+                        
+                        // Comparar apenas as datas (ignorar horário)
+                        if (!isNaN(dataInclusao.getTime()) && !isNaN(dataEntregaFinal.getTime())) {
+                            // Zerar horários para comparar apenas datas
+                            dataInclusao.setHours(0, 0, 0, 0);
+                            dataEntregaFinal.setHours(0, 0, 0, 0);
+                            
+                            if (dataInclusao > dataEntregaFinal) {
+                                // Inclusão DEPOIS da entrega = ATRASADA
+                                inclusoesAtrasadas++;
+                            } else {
+                                // Inclusão ANTES ou no mesmo dia da entrega = ANTECIPADA
+                                inclusoesAntecipadas++;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Desenhar componentes baseado na configuração
+            drawKpiCards(data.length);
+            
+            if (isChartEnabled('map')) {
+                drawMapChart(data, indices.ufDestino);
+            }
+            if (isChartEnabled('timing')) {
+                drawTimingChart(inclusoesAntecipadas, inclusoesAtrasadas);
+            }
+        }
+
+        function drawKpiCards(totalTrips) {
+            const kpiContainer = document.querySelector('.kpi-container');
+            kpiContainer.innerHTML = '';
+            
+            if (isKpiEnabled('total')) {
+                kpiContainer.innerHTML += `
+                    <div class="kpi-card">
+                        <div class="value">${totalTrips}</div>
+                        <div class="label">Total de Viagens</div>
+                    </div>`;
+            }
+        }
+
+        function drawMapChart(data, ufIndex) {
+            const tripsByUf = data.reduce((acc, row) => {
+                const uf = `BR-${row[ufIndex]}`;
+                if (row[ufIndex]) {
+                    acc[uf] = (acc[uf] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            const chartData = new google.visualization.DataTable();
+            chartData.addColumn('string', 'Estado');
+            chartData.addColumn('number', 'Viagens');
+            chartData.addRows(Object.entries(tripsByUf));
+
+            const primaryColor = getComputedStyle(document.body).getPropertyValue('--primary-color') || '#007bff';
+            
+            const options = {
+                title: 'Volume de Entregas por Estado',
+                region: 'BR',
+                resolution: 'provinces',
+                colorAxis: {colors: ['#e6f7ff', primaryColor]},
+                backgroundColor: '#ffffff',
+                datalessRegionColor: '#f8f9fa',
+                defaultColor: '#6c757d',
+                legend: {textStyle: {color: '#343a40', fontSize: 12}},
+                titleTextStyle: {color: '#212529', fontSize: 16, bold: false},
+            };
+            const chart = new google.visualization.GeoChart(document.getElementById('map_chart_div'));
+            chart.draw(chartData, options);
+        }
+
+        function drawTimingChart(antecipadas, atrasadas) {
+            const chartData = new google.visualization.DataTable();
+            chartData.addColumn('string', 'Tipo de Inclusão');
+            chartData.addColumn('number', 'Quantidade');
+            chartData.addColumn({type: 'string', role: 'style'});
+            
+            chartData.addRows([
+                ['Inclusões Antecipadas\n(Antes da Entrega)', antecipadas, '#28a745'],
+                ['Inclusões Atrasadas\n(Depois da Entrega)', atrasadas, '#dc3545']
+            ]);
+
+            const primaryColor = getComputedStyle(document.body).getPropertyValue('--primary-color') || '#28a745';
+
+            const options = {
+                title: 'Timing de Inclusão das SMs (Antes vs Depois da Entrega)',
+                legend: { position: 'none' },
+                hAxis: { 
+                    title: 'Quantidade de SMs',
+                    minValue: 0
+                },
+                vAxis: { 
+                    textStyle: { fontSize: 12 } 
+                },
+                titleTextStyle: {color: '#212529', fontSize: 16, bold: false},
+                annotations: {
+                    alwaysOutside: true,
+                    textStyle: {
+                        fontSize: 14,
+                        bold: true,
+                        color: '#000'
+                    }
+                },
+                bar: { groupWidth: '70%' },
+                chartArea: {width: '60%', height: '70%'}
+            };
+            
+            const chart = new google.visualization.BarChart(document.getElementById('timing_chart_div'));
+            chart.draw(chartData, options);
+        }
+
+        function showError(error) {
+            const errorDiv = document.getElementById('error_div');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = '<strong>Erro:</strong> ' + error.message;
+        }
+    </script>
+</head>
+<body>
+    <h1>Dashboard de Gestão Logística</h1>
+    
+    <div id="error_div"></div>
+
+    <div class="kpi-container">
+        <!-- KPIs serão inseridos dinamicamente -->
+    </div>
+
+    <div class="dashboard-container">
+        <div class="chart-container full-width" id="map_chart_div" style="display: none;"></div>
+        <div class="chart-container full-width" id="timing_chart_div" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Mostra apenas os containers de gráficos habilitados
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (isChartEnabled('map')) document.getElementById('map_chart_div').style.display = 'block';
+                if (isChartEnabled('timing')) document.getElementById('timing_chart_div').style.display = 'block';
+            }, 100);
+        });
+    </script>
+</body>
+</html>
